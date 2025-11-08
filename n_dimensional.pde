@@ -1,5 +1,5 @@
-float g = 0.5; // strength of gravity (accel), in m/s/s
-float j = 10.00; // jump strength (initial velocity), in m/s
+float delta; // delta = computed time in between frames (ensure that forces are per second, not per frame)
+float t,pt;
 float ground; // ground level
 
 class Move {
@@ -31,9 +31,19 @@ Player pp = new Player(PlayerType.PRIMARY);
 Player ps = new Player(PlayerType.SECONDARY);
 Player[] players = {pp,ps};
 
+
+void updateDelta() { // run this before running player methods
+    pt = t;
+    t = millis() / 1000.0;
+    delta = t - pt;
+}
+
 void setup() {
     size(1920,1080,P2D);
 
+    t = millis() / 1000.0; // initial
+    pt = t; // initial
+    delta = 0; // initial
     ground = height-500;
     pp.shape = createShape(RECT, 0, 0, 80, 80);
     ps.shape = createShape(RECT, 0, 0, 80, 80);
