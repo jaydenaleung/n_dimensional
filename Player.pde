@@ -12,17 +12,17 @@ class Player {
     float maxvx,maxvy; // speed clamps
 
     // Flags
-    boolean onGround;
+    boolean onGround, jumpable;
 
 
     ////////// Constructors //////////
 
-    // float, PlayerType
-    Player(float delta, PlayerType t) {
+    // PlayerType
+    Player(PlayerType t) {
         // Properties
         type = t;
 
-        if (type == PRIMARY) {
+        if (type == PlayerType.PRIMARY) {
             pos = new PVector(100,100);
         } else {
             pos = new PVector(100,width-100);
@@ -30,26 +30,32 @@ class Player {
 
         v_i = new PVector(0,0);
         v_e = new PVector(0,0);
-        v_t = v_i + v_e;
+        v_t = PVector.add(v_i, v_e);
 
         // Constants
         g = 9.81;
         f = 1.01;
+
         xAccel = 5.0;
         yAccel = 5.0;
+
+        jumpVel = -15.0;
+        fallVel = 30.0;
+
         maxvx = 10.0;
         maxvy = 30.0;
 
         // Flags
         if (pos.x < ground) { onGround = false; } else { onGround = true; }
+        if (onGround) { jumpable = true; } else { jumpable = false; } // set other conditions later
     }
 
-    // float, PlayerType, float, float
-    Player(float delta, PlayerType t, float g, float f) {
+    // PlayerType, float, float
+    Player(PlayerType t, float g, float f) {
         // Properties
         type = t;
 
-        if (type == PRIMARY) {
+        if (type == PlayerType.PRIMARY) {
             pos = new PVector(100,100);
         } else {
             pos = new PVector(100,width-100);
@@ -57,18 +63,24 @@ class Player {
 
         v_i = new PVector(0,0);
         v_e = new PVector(0,0);
-        v_t = v_i + v_e;
+        v_t = PVector.add(v_i, v_e);
 
         // Constants
         this.g = g;
         this.f = f;
+
         xAccel = 5.0;
         yAccel = 5.0;
+
+        jumpVel = -15.0;
+        fallVel = 30.0;
+
         maxvx = 10.0;
         maxvy = 30.0;
 
         // Flags
         if (pos.x < ground) { onGround = false; } else { onGround = true; }
+        if (onGround) { jumpable = true; } else { jumpable = false; } // set other conditions later
     }
 
 
@@ -77,11 +89,16 @@ class Player {
     // Input
     void keyMove(int key) { // takes in key from keyPressed conditional in main file and runs logic. Note: key is a char which can be represented as an int.
         if (key == 'w' || key == UP) {
-            v_i.y = 
+            if (jumpable) {
+                v_i.y = jumpVel;
+                jumpable = false;
+            }
         }
 
         if (key == 's' || key == DOWN) {
-            
+            if (!onGround) {
+                v_i.y = fallVel;
+            }
         }
 
         if (key == 'a' || key == LEFT) {
@@ -112,17 +129,21 @@ class Player {
     }
 
     // Updates
+    void updateFlags() {
+        if (pos.x < ground) { onGround = false; } else { onGround = true; }
+        if (onGround) { jumpable = true; } else { jumpable = false; } // set other conditions later
+    }
+
     void updateVelocity() { // run within updatePosition()
-        v_t = v_i + v_e;
+        v_t = PVector.add(v_i, v_e);
     }
 
     void updatePosition() {
         updateVelocity();
-
-        pos += v_t * delta;
+        pos.add(v_t.copy().mult(delta));
     }
 
     void drawPlayer() {
-
+        rect(pos.x,pos.y,20,20);
     }
 }
