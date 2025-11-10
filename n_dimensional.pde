@@ -36,7 +36,7 @@ void checkKeys(Player p) {
 ////////// Game Functions //////////
 
 void setup() {
-    size(1920,1080,P2D);
+    size(800,800,P2D);
     initDelta();
     ground = height-500;
     
