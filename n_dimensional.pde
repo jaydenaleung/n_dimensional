@@ -2,6 +2,7 @@
 float delta; // delta = computed time in between frames (ensure that forces are per second, not per frame)
 float t,pt;
 float ground; // ground level
+boolean moving = false;
 
 enum PlayerType { PRIMARY, SECONDARY }
 
@@ -26,21 +27,28 @@ void updateDelta() { // run this before running player methods
     println("delta: " + delta);
 }
 
-void checkKeys(Player p) {
+void checkKeys(Player p) { // feeder function into p.keyMove()
     if (keyPressed) {
         p.keyMove(key);
     }
+}
+
+void keyReleased() {
+    moving = false;
+}
+
+void printChecks(Player p) { // activate when you want to print things
+    println("v_e.x: " + p.v_e.x);
+    println("v_t.x: " + p.v_t.x);
 }
 
 
 ////////// Game Functions //////////
 
 void setup() {
-    size(800,800,P2D);
+    size(400,400,P2D);
     initDelta();
-    ground = height-500;
-    
-
+    ground = height-100;
 }
 
 void draw() {
@@ -54,8 +62,10 @@ void draw() {
         checkKeys(p);
         p.gravity();
         p.friction();
+        p.updateVelocity();
         p.updatePosition();
         p.drawPlayer();
+        printChecks(p);
     }
     
 }
