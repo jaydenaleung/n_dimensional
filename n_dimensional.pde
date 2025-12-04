@@ -10,8 +10,10 @@ enum PlayerType { PRIMARY, SECONDARY }
 ////////// Instances //////////
 Player pp = new Player(PlayerType.PRIMARY);
 Player ps = new Player(PlayerType.SECONDARY);
-Player[] players = {pp};
+Player[] players = {pp,ps};
 
+Attack spikes = new Attack("spikes", "FIRST", 1);
+Attack[] attacks = {spikes};
 
 ////////// Functions //////////
 void initDelta() {
@@ -24,7 +26,6 @@ void updateDelta() { // run this before running player methods
     pt = t;
     t = millis() / 1000.0;
     delta = t - pt;
-    println("delta: " + delta);
 }
 
 void checkKeys(Player p) { // feeder function into p.keyMove()
@@ -33,13 +34,32 @@ void checkKeys(Player p) { // feeder function into p.keyMove()
     }
 }
 
-void keyReleased() {
-    moving = false;
-}
-
 void printChecks(Player p) { // activate when you want to print things
     println("v_e.x: " + p.v_e.x);
     println("v_t.x: " + p.v_t.x);
+}
+
+
+////////// Watcher Functions //////////
+
+void mouseClicked() { // test
+    pp.sides++;
+}
+
+void keyPressed() {
+    for (Player p : players) {
+        if (p.query.length() < 5 && key != 'w' && key != 'a' && key != 's' && key != 'd') { // limited to 5 letter keywords w/o WASD & arrow keys
+            if (keyCode == ENTER) {
+                p.query = "";
+            } else {
+                p.query += key;
+            }
+        }
+    }
+}
+
+void keyReleased() {
+    moving = false;
 }
 
 
@@ -49,6 +69,10 @@ void setup() {
     size(400,400,P2D);
     initDelta();
     ground = height-100;
+
+    for (Player p : players) {
+        p.shape = p.renderShape();
+    }
 }
 
 void draw() {
@@ -58,14 +82,21 @@ void draw() {
 
     // Looping over all players
     for (Player p : players) {
+        // Physics
         p.updateFlags();
         checkKeys(p);
         p.gravity();
         p.friction();
         p.updateVelocity();
         p.updatePosition();
+
+        // Moves
+        p.keywordAttack();
+
+        // Rendering
         p.drawPlayer();
-        printChecks(p);
+        p.drawKeyword();
+        // printChecks(p);
     }
     
 }

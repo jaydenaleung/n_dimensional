@@ -9,10 +9,11 @@ class Player {
     // Properties
     PVector pos,v_i,v_e,v_t; // v_i = input vel, v_e = external vel, v_t = total vel
     PlayerType type;
+    PShape shape;
     int initSides, sides;
     float d; // d = diameter, dist from center to a vertex
     color c;
-    PShape shape;
+    String query; // attacking move query
 
     // Constants
     float g,f; // g = gravity, f = friction constant
@@ -30,12 +31,11 @@ class Player {
     Player(PlayerType t) {
         // Properties
         type = t;
-        d = 50;
+        d = 20;
         c = color(255,255,255);
 
-        initSides = 50;
+        initSides = 3;
         sides = initSides;
-        shape = renderShape(sides, d, c);
 
         if (type == PlayerType.PRIMARY) {
             pos = new PVector(100,100);
@@ -46,6 +46,8 @@ class Player {
         v_i = new PVector(0,0);
         v_e = new PVector(0,0);
         v_t = PVector.add(v_i, v_e);
+
+        query = "";
 
         // Constants
         g = 100.0;
@@ -159,11 +161,46 @@ class Player {
 
     void updatePosition() {
         pos.add(v_t.copy().mult(delta));
-        println("vy = " + v_t.y);
     }
 
-    PShape renderShape(int sides, float d, color c) { // make the polygon shape based on # of sides
+    // Attacks
+    void keywordAttack() {
+        Player p = this;
+        Player o = identifyOpponent();
+        
+        if (o != null) { // if there is an identifiable opponent
+            if (query.length() == 5) {
+                if (query == spikes.kywd) {
+                    spikes.attack(p,o);
+                }
+                // else if (query == .kywd) {
+                //     .attack();
+                // } 
+                // else if (query == .kywd) {
+                //     .attack();
+                // }
+                query = ""; // clear
+            }
+        }
+    }
+
+    void drawKeyword() {
+        fill(255);
+        text(query.toUpperCase(),100,100);
+    }
+
+    Player identifyOpponent() {
+        for (Player p : players) {
+            if (p != this) { return p; }
+        }
+        return null;
+    }
+
+    // Rendering
+    PShape renderShape() { // make the polygon shape based on # of sides. call when init and whenever attacked.
         PShape s;
+        PVector[] v = new PVector[sides]; // array of vertices
+        
         s = createShape();
         s.beginShape();
         s.fill(c);
@@ -171,12 +208,36 @@ class Player {
         
         // Computational generation of shape
         // the angle between the verticies of an n-sided regular polygon is 360/n
+        float a = 360.0/sides;
+        // if it has an odd number of sides, the first vertex is directly above the origin. if it has an even number, the first vertex is angle/2 to the side of directly above the origin. (from observation of shapes)
+        if (sides % 2 == 1) { // odd
+            for (int i = 0; i < sides; i++) {
+                // trig calculations to get the coordinate based on the angle from the top
+                float ang = 90-a*i;
+                float x = d*cos(radians(ang));
+                float y = -d*sin(radians(ang)); // flip the y axis with the negative as y axis points down
+                v[i] = new PVector(x,y);
+            }
+        } else { // even
+            for (int i = 0; i < sides; i++) {
+                // angle + half of that angle for even-sided polygons
+                float ang = (90-a*i)-a/2;
+                float x = d*cos(radians(ang));
+                float y = -d*sin(radians(ang));
+                v[i] = new PVector(x,y);
+            }
+        }
+
+        for (PVector vec : v) {
+            s.vertex(vec.x, vec.y);
+        }
 
         s.endShape(CLOSE);
         return s;
     }
 
     void drawPlayer() {
-        rect(pos.x,pos.y,20,20);
+        shape = renderShape(); // opt
+        shape(shape,pos.x,pos.y);
     }
 }
