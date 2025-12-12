@@ -2,10 +2,10 @@
 
 class Spikes {
     // Constants & Variables
-    int dmg = 1; // int amt of sides
-    float r = 5.0; // 10 pixel radius of damage
-    float initVel = 300.0; // 300 pixels/s
-    float size = 12.5; // distance from center to the top vertex of triangle
+    int dmg; // int amt of sides
+    float r; // custom pixel radius of damage, not used now
+    float initVel; // 300 pixels/s
+    float size; // distance from center to the top vertex of triangle
 
     Player p; // player
     Player o; // opponent
@@ -13,18 +13,32 @@ class Spikes {
     PVector ppos; // player position at time of attack activation
     PVector opos; // opponent position at time of attack activation
 
-    boolean attacking0 = true; // if the spikes are generated before they are sent out from the player
-    boolean attacking1 = false; // if the part 1 attack animation is playing
-    boolean attacking12 = false; // if the spike geometry is being flipped between parts 1 and 2
-    boolean attacking2 = false; // if the part 2 attack animation is playing
-    boolean inFrame = true; // if the spikes are within the frame
-    boolean hit = false; // if the spikes hit
+    boolean attacking0; // if the spikes are generated before they are sent out from the player
+    boolean attacking1; // if the part 1 attack animation is playing
+    boolean attacking12; // if the spike geometry is being flipped between parts 1 and 2
+    boolean attacking2; // if the part 2 attack animation is playing
+    boolean inFrame; // if the spikes are within the frame
+    boolean hit; // if the spikes hit
 
-    ArrayList<Projectile> spikeList = new ArrayList<Projectile>();
+    ArrayList<Projectile> spikeList;
 
     Spikes(Player p, Player o) {
         this.p = p;
         this.o = o;
+
+        dmg = 2;
+        r = 20.0;
+        initVel = 300.0;
+        size = 12.5;
+
+        attacking0 = true;
+        attacking1 = false;
+        attacking12 = false;
+        attacking2 = false;
+        inFrame = true;
+        hit = false;
+
+        spikeList = new ArrayList<Projectile>();
     }
 
     void attack() {
@@ -109,9 +123,10 @@ class Spikes {
                 }
             } else { // update opponent's health if it is within attacking radius
                 attacking2 = false;
-                if (dist(opos.x, opos.y, o.pos.x, o.pos.y) < r) { // the pos of the opp when the attack was sent and the pos of the opp when the attack hits
+                if (dist(opos.x, opos.y, o.pos.x, o.pos.y) < o.d/2) { // the pos of the opp when the attack was sent and the pos of the opp when the attack hits
                     o.sides -= dmg;
                 }
+                triggerScreenShake(20.0);
             }
         }
     }

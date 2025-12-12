@@ -11,7 +11,8 @@ class Player {
     PlayerType type;
     PShape shape;
     int initSides, sides;
-    float d; // d = diameter, dist from center to a vertex
+    float d; // d = DISTANCE NOT DIAMETER, dist from center to a vertex
+    float distToSide; // as apposed to a vertex
     color c;
     String query; // attacking move query
 
@@ -31,17 +32,15 @@ class Player {
     Player(PlayerType t) {
         // Properties
         type = t;
-        d = 20;
+        d = 25;
+        distToSide = d; // default
         c = color(255,255,255);
 
-        initSides = 3;
+        initSides = 20; // starting # of sides
         sides = initSides;
 
-        if (type == PlayerType.PRIMARY) {
-            pos = new PVector(100,100);
-        } else {
-            pos = new PVector(100,width-100);
-        }
+        // Actual spawn positions are set after size() in initPosition()
+        pos = new PVector(0,0);
 
         v_i = new PVector(0,0);
         v_e = new PVector(0,0);
@@ -50,20 +49,20 @@ class Player {
         query = "";
 
         // Constants
-        g = 100.0;
+        g = 150.0;
         f = 10.0;
 
         xAccel = 200.0;
         yAccel = 200.0;
 
-        jumpVel = -100.0;
+        jumpVel = -150.0;
         fallVel = 60.0; // for down button, not gravity
 
         maxvx = 100.0;
         maxvy = 150.0;
 
         // Flags
-        if (pos.y < ground) { onGround = false; } else { onGround = true; }
+        if (pos.y + distToSide < ground) { onGround = false; } else { onGround = true; }
         if (onGround) { jumpable = true; } else { jumpable = false; } // set other conditions later
     }
 
@@ -105,7 +104,8 @@ class Player {
 
     // Input
     void keyMove(int key) { // takes in key from keyPressed conditional in main file and runs logic. Note: key is a char which can be represented as an int.
-        if (key == 'w' || keyCode == UP) {
+        // WASD for Player 1 (primary) and arrow keys for Player 2 (secondary)
+        if ((key == 'w' && type == PlayerType.PRIMARY) || (keyCode == UP && type == PlayerType.SECONDARY)) {
             if (jumpable) {
                 v_e.y = jumpVel;
                 onGround = false; // prevents code from setting v_t.y = 0
@@ -113,19 +113,19 @@ class Player {
             }
         }
 
-        if (key == 's' || keyCode == DOWN) {
+        if ((key == 's' && type == PlayerType.PRIMARY) || (keyCode == DOWN && type == PlayerType.SECONDARY)) {
             if (!onGround) {
                 v_i.y = fallVel;
             }
         }
 
-        if (key == 'a' || keyCode == LEFT) {
+        if ((key == 'a' && type == PlayerType.PRIMARY) || (keyCode == LEFT && type == PlayerType.SECONDARY)) {
             if (!moving) { v_i.x = 0; moving = true; }
             v_i.x += -xAccel * delta;
             v_i.x = constrain(v_i.x,-maxvx,maxvx);
         }
 
-        if (key == 'd' || keyCode == RIGHT) {
+        if ((key == 'd' && type == PlayerType.PRIMARY) || (keyCode == RIGHT && type == PlayerType.SECONDARY)) {
             if (!moving) { v_i.x = 0; moving = true; }
             v_i.x += xAccel * delta;
             v_i.x = constrain(v_i.x,-maxvx,maxvx);
@@ -148,9 +148,14 @@ class Player {
         }
     }
 
-    // Updates
+    // Inits & Updates
+    void initPosition() {
+        float startX = (type == PlayerType.PRIMARY) ? width * 0.25 : width * 0.75;
+        pos.set(startX, 100); // spawn above the ground
+    }
+
     void updateFlags() {
-        if (pos.y < ground) { onGround = false; } else { onGround = true; }
+        if (pos.y + distToSide < ground) { onGround = false; } else { onGround = true; }
         if (onGround) { jumpable = true; } else { jumpable = false; } // set other conditions later
     }
 
@@ -187,6 +192,7 @@ class Player {
             Object atk = ongoingAttacks.get(i);
 
             Spikes a;
+            Darts b;
             // other attacks of Attack b; Attack c; Attack d; etc.
 
             if (atk instanceof Spikes) {
@@ -197,14 +203,29 @@ class Player {
                 } else {
                     ongoingAttacks.remove(a);
                 }
-                // with other attacks of Attack b; Attack c; Attack d; etc.
             }
+
+            if (atk instanceof Darts) {
+                b = (Darts)atk;
+
+                if (!b.hit) {
+                    b.attack();
+                } else {
+                    ongoingAttacks.remove(b);
+                }
+            }
+            // with other attacks of Attack b; Attack c; Attack d; etc.
         }
     }
 
     void drawKeyword() {
         fill(255);
-        text(query.toUpperCase(),100,100);
+        textFont(font2);
+
+        String q = query.toUpperCase();
+        float textOffset = textWidth(q) / 2.0; // offset from player dynamically based on actual text width
+
+        text(q,pos.x-textOffset,pos.y-35);
     }
 
     Player identifyOpponent() { // returns the instance of the opponent
@@ -216,7 +237,7 @@ class Player {
 
     boolean isValidKeyword(String ky) { // checks if the keyword matches an attack
         for (Attack a : attacks) {
-            if (ky.equals(a.kywd)) {
+            if ((type == PlayerType.PRIMARY && ky.equals(a.kywd1)) || (type == PlayerType.SECONDARY && ky.equals(a.kywd2))) { // independent player keywords
                 return true;
             }
         }
@@ -225,7 +246,7 @@ class Player {
 
     int findKeywordIndex(String ky) { // returns the index of the keyword's attack in the attack list
         for (Attack a : attacks) {
-            if (ky.equals(a.kywd)) { // find the matching attack
+            if ((type == PlayerType.PRIMARY && ky.equals(a.kywd1)) || (type == PlayerType.SECONDARY && ky.equals(a.kywd2))) { // find the matching attack
                 for (int i = 0; i < attacks.length; i++) { // find the attack's index
                     if (a == attacks[i]) {
                         return i;
@@ -240,6 +261,8 @@ class Player {
     PShape renderShape() { // make the polygon shape based on # of sides. call when init and whenever attacked.
         PShape s;
         PVector[] v = new PVector[sides]; // array of vertices
+
+        distToSide = d * cos(PI/sides);
         
         s = createShape();
         s.beginShape();
@@ -278,6 +301,7 @@ class Player {
 
     void drawPlayer() {
         shape = renderShape(); // opt
+        // shape(shape,pos.x,pos.y-distToSide); // offest so it looks like it's ont he ground
         shape(shape,pos.x,pos.y);
     }
 }
