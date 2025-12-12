@@ -170,16 +170,34 @@ class Player {
         
         if (o != null) { // if there is an identifiable opponent
             if (query.length() == 5) {
-                if (query == spikes.kywd) {
-                    spikes.attack(p,o);
+                query = query.toUpperCase();
+                if (isValidKeyword(query)) {
+                    int index = findKeywordIndex(query);
+                    if (!(index < 0)) { // if valid index or attack
+                        attack(index,p,o);
+                    }
                 }
-                // else if (query == .kywd) {
-                //     .attack();
-                // } 
-                // else if (query == .kywd) {
-                //     .attack();
-                // }
                 query = ""; // clear
+            }
+        }
+    }
+
+    void stepAttacks() {
+        for (int i = ongoingAttacks.size()-1; i >= 0; i--) { // backwards iteration for ArrayList remove!
+            Object atk = ongoingAttacks.get(i);
+
+            Spikes a;
+            // other attacks of Attack b; Attack c; Attack d; etc.
+
+            if (atk instanceof Spikes) {
+                a = (Spikes)atk;
+
+                if (!a.hit) {
+                    a.attack();
+                } else {
+                    ongoingAttacks.remove(a);
+                }
+                // with other attacks of Attack b; Attack c; Attack d; etc.
             }
         }
     }
@@ -189,11 +207,33 @@ class Player {
         text(query.toUpperCase(),100,100);
     }
 
-    Player identifyOpponent() {
+    Player identifyOpponent() { // returns the instance of the opponent
         for (Player p : players) {
             if (p != this) { return p; }
         }
         return null;
+    }
+
+    boolean isValidKeyword(String ky) { // checks if the keyword matches an attack
+        for (Attack a : attacks) {
+            if (ky.equals(a.kywd)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int findKeywordIndex(String ky) { // returns the index of the keyword's attack in the attack list
+        for (Attack a : attacks) {
+            if (ky.equals(a.kywd)) { // find the matching attack
+                for (int i = 0; i < attacks.length; i++) { // find the attack's index
+                    if (a == attacks[i]) {
+                        return i;
+                    }
+                }
+            }
+        }
+        return -1; // didn't find attack
     }
 
     // Rendering
